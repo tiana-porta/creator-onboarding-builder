@@ -1,5 +1,8 @@
 'use client'
 
+// Mark as dynamic
+export const dynamic = 'force-dynamic'
+
 import { GlassCard } from '@/components/onboarding/GlassCard'
 import { motion } from 'framer-motion'
 

@@ -107,6 +107,9 @@ export const metadata: Metadata = {
   description: 'Welcome to Whop University',
 }
 
+// Mark layout as dynamic to prevent static generation issues with WhopApp
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({
   children,
 }: {
