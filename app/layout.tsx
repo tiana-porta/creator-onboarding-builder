@@ -4,6 +4,11 @@ import { Theme } from 'frosted-ui'
 import { WhopApp } from '@whop/react/components'
 import './globals.css'
 
+// Ensure App ID is available - set as fallback if env var doesn't load
+if (typeof process !== 'undefined' && !process.env.NEXT_PUBLIC_WHOP_APP_ID) {
+  process.env.NEXT_PUBLIC_WHOP_APP_ID = 'app_AVNFP7BwO95Bf8'
+}
+
 // FFF-AcidGrotesk font configuration
 const acidGrotesk = localFont({
   src: [
