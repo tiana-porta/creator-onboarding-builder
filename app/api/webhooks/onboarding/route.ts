@@ -1,0 +1,97 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { appendToSheet, updateIncompleteUsers, type OnboardingData } from '@/lib/sheets/client'
+import { upsertRecord } from '@/lib/admin/storage'
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { event, data, timestamp, userId } = body
+
+    // Verify webhook secret if needed
+    const secret = request.headers.get('x-webhook-secret')
+    const expectedSecret = process.env.WEBHOOK_SECRET
+
+    if (expectedSecret && secret !== expectedSecret) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Generate userId if not provided (use email or create anonymous ID)
+    const recordUserId = userId || data.email || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Handle different events
+    switch (event) {
+      case 'step_progress':
+        // Log progress to sheets
+        const progressData: OnboardingData = {
+          ...data,
+          timestamp: timestamp || new Date().toISOString(),
+        }
+        await appendToSheet(progressData)
+        
+        // Store progress in database
+        await upsertRecord({
+          userId: recordUserId,
+          email: data.email,
+          step: data.step || 0,
+          xp: data.xp || 0,
+          selectedClass: data.selectedClass || null,
+          storeUrl: data.storeUrl || null,
+          storeVerified: data.storeVerified || false,
+          startedAt: data.startedAt || timestamp || new Date().toISOString(),
+        })
+        break
+
+      case 'onboarding_completed':
+        // Log completion to sheets
+        const completedData: OnboardingData = {
+          ...data,
+          timestamp: timestamp || new Date().toISOString(),
+        }
+        await appendToSheet(completedData)
+        
+        // Store completion in database
+        await upsertRecord({
+          userId: recordUserId,
+          email: data.email,
+          step: data.step || 6,
+          xp: data.xp || 0,
+          selectedClass: data.selectedClass || null,
+          storeUrl: data.storeUrl || null,
+          storeVerified: data.storeVerified || false,
+          startedAt: data.startedAt || timestamp || new Date().toISOString(),
+          completedAt: data.completedAt || timestamp || new Date().toISOString(),
+        })
+        break
+
+      case 'onboarding_started':
+        // Track when someone starts onboarding
+        await upsertRecord({
+          userId: recordUserId,
+          email: data.email,
+          step: 1,
+          xp: 0,
+          startedAt: data.startedAt || timestamp || new Date().toISOString(),
+        })
+        break
+
+      case 'check_incomplete':
+        // Check and update incomplete users
+        await updateIncompleteUsers()
+        break
+
+      default:
+        console.log('Unknown event type:', event)
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Webhook error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
