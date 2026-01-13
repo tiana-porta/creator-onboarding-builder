@@ -1,11 +1,9 @@
-@import "@whop/react/styles.css" layer(frosted_ui);
+/* Import Frosted UI styles - must be before @tailwind */
+@import 'frosted-ui/styles.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Frosted UI styles */
-@import 'frosted-ui/styles.css';
 
 @layer base {
   :root {

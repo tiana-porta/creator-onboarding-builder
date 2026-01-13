@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
-import { withWhopAppConfig } from "@whop/react/next.config";
-
 const nextConfig = {
   reactStrictMode: true,
-  // Exclude apps directory from build
-  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  serverExternalPackages: ['googleapis'],
 };
 
-export default withWhopAppConfig(nextConfig);
+export default nextConfig;
