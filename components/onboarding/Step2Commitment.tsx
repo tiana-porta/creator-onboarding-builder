@@ -2,12 +2,43 @@
 
 import { GlassCard } from './GlassCard'
 import { motion } from 'framer-motion'
+import { useEffect, useRef } from 'react'
 
 interface Step2CommitmentProps {
   onCommit: () => void
 }
 
 export function Step2Commitment({ onCommit }: Step2CommitmentProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const handleError = (e: Event) => {
+      console.error('Video error:', e)
+      console.error('Video error details:', video.error)
+    }
+
+    const handleLoadStart = () => {
+      console.log('Video load started')
+    }
+
+    const handleCanPlay = () => {
+      console.log('Video can play')
+    }
+
+    video.addEventListener('error', handleError)
+    video.addEventListener('loadstart', handleLoadStart)
+    video.addEventListener('canplay', handleCanPlay)
+
+    return () => {
+      video.removeEventListener('error', handleError)
+      video.removeEventListener('loadstart', handleLoadStart)
+      video.removeEventListener('canplay', handleCanPlay)
+    }
+  }, [])
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="text-center mb-12">
@@ -20,12 +51,22 @@ export function Step2Commitment({ onCommit }: Step2CommitmentProps) {
         </p>
 
         <GlassCard className="mb-8">
-          <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl flex items-center justify-center mb-6 border border-primary/20">
-            <div className="text-center">
-              <div className="text-7xl mb-4">🎬</div>
-              <p className="text-primary/60 font-medium">Video Content Placeholder</p>
-              <p className="text-xs text-primary/40 mt-2">Video embed will go here</p>
-            </div>
+          <div className="aspect-video rounded-2xl mb-6 border border-primary/20 overflow-hidden">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
+              controls
+              loop
+              preload="auto"
+              crossOrigin="anonymous"
+            >
+              <source src="/videos/commitment-video.mp4" type="video/mp4" />
+              <source src="/videos/commitment-video.mp4" type="video/quicktime" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </GlassCard>
 
