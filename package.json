@@ -10,7 +10,7 @@
     "followup": "tsx scripts/followup.ts"
   },
   "dependencies": {
-    "@whop/react": "^0.3.1",
+    "@whop/react": "0.3.0",
     "@whop/sdk": "^0.0.23",
     "canvas-confetti": "^1.9.2",
     "framer-motion": "^11.0.0",
