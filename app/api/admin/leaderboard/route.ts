@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getLeaderboardStats } from '@/lib/admin/storage'
 
+// Mark route as dynamic since it uses request.headers
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // For development: allow access without auth if WHOP_API_KEY is not set

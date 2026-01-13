@@ -73,7 +73,7 @@ export default function UniversityPage() {
                       ? state.selectedClass === 'architect' ? 'The Architect'
                         : state.selectedClass === 'sensei' ? 'The Sensei'
                         : state.selectedClass === 'builder' ? 'The Builder'
-                        : state.selectedClass.charAt(0).toUpperCase() + state.selectedClass.slice(1)
+                        : 'Not selected'
                       : 'Not selected'}
                   </p>
                 </div>

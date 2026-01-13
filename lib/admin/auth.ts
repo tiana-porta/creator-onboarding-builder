@@ -1,13 +1,17 @@
-import { WhopAPI } from '@whop-sdk/core'
+// Whop SDK integration (placeholder - implement based on actual SDK structure)
+// import WhopAPI from '@whop/sdk'
 import { headers } from 'next/headers'
 
 // Initialize Whop API client
-function getWhopAPI(): WhopAPI {
+// Note: This is a placeholder - adjust based on actual @whop/sdk exports
+function getWhopAPI(): any {
   const apiKey = process.env.WHOP_API_KEY
   if (!apiKey) {
     throw new Error('WHOP_API_KEY is not set')
   }
-  return new WhopAPI({ token: apiKey })
+  // TODO: Initialize Whop API with correct SDK structure
+  // return new WhopAPI({ token: apiKey })
+  return { token: apiKey }
 }
 
 // Check if user is admin

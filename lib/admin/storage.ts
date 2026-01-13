@@ -50,8 +50,9 @@ export async function upsertRecord(record: Partial<OnboardingRecord> & { userId:
   
   const now = new Date().toISOString()
   const fullRecord: OnboardingRecord = {
+    ...record,
     userId: record.userId,
-    email: record.email,
+    email: record.email ?? '',
     step: record.step ?? 0,
     xp: record.xp ?? 0,
     selectedClass: record.selectedClass ?? null,
@@ -61,7 +62,6 @@ export async function upsertRecord(record: Partial<OnboardingRecord> & { userId:
     completedAt: record.completedAt ?? null,
     createdAt: existingIndex >= 0 ? records[existingIndex].createdAt : now,
     updatedAt: now,
-    ...record,
   }
 
   if (existingIndex >= 0) {
