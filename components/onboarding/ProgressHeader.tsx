@@ -1,29 +1,53 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useAdminCheck } from '@/lib/hooks/useAdminCheck'
 
 interface ProgressHeaderProps {
   currentStep: number
   totalSteps: number
   xp: number
   stepTitle: string
+  onAdminTabClick?: () => void
+  showAdminTab?: boolean
 }
 
-export function ProgressHeader({ currentStep, totalSteps, xp, stepTitle }: ProgressHeaderProps) {
+export function ProgressHeader({ 
+  currentStep, 
+  totalSteps, 
+  xp, 
+  stepTitle,
+  onAdminTabClick,
+  showAdminTab = false
+}: ProgressHeaderProps) {
   const progress = (currentStep / totalSteps) * 100
+  const { isAdmin, loading } = useAdminCheck()
+  const shouldShowAdminTab = showAdminTab && !loading && isAdmin === true
 
   return (
     <div className="w-full mb-10">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold text-primary mb-2">{stepTitle}</h2>
           <p className="text-sm text-primary/60 font-medium">
             Step {currentStep} of {totalSteps}
           </p>
         </div>
-        <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border-2 border-accent/20 shadow-sm">
-          <span className="text-accent font-bold text-lg">{xp}</span>
-          <span className="text-primary/70 text-sm font-semibold">XP</span>
+        <div className="flex items-center gap-4">
+          {shouldShowAdminTab && onAdminTabClick && (
+            <motion.button
+              onClick={onAdminTabClick}
+              className="px-4 py-2 rounded-lg border-2 border-accent/30 text-accent hover:bg-accent/10 font-medium text-sm transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              🔧 Admin
+            </motion.button>
+          )}
+          <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border-2 border-accent/20 shadow-sm">
+            <span className="text-accent font-bold text-lg">{xp}</span>
+            <span className="text-primary/70 text-sm font-semibold">XP</span>
+          </div>
         </div>
       </div>
       <div className="relative h-3 bg-primary/20 rounded-full overflow-hidden shadow-inner">

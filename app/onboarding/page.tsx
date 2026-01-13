@@ -3,7 +3,7 @@
 // Mark as dynamic to avoid static generation issues with WhopApp
 export const dynamic = 'force-dynamic'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOnboarding } from '@/lib/onboarding/hooks'
 import { WelcomeScreen } from '@/components/onboarding/WelcomeScreen'
@@ -14,6 +14,7 @@ import { Step3Dashboard } from '@/components/onboarding/Step3Dashboard'
 import { Step4Accountability } from '@/components/onboarding/Step4Accountability'
 import { Step5Schedule } from '@/components/onboarding/Step5Schedule'
 import { Step6Gateway } from '@/components/onboarding/Step6Gateway'
+import { AdminTab } from '@/components/onboarding/AdminTab'
 
 const STEP_TITLES = [
   'Choose Your Class',
@@ -35,6 +36,8 @@ export default function OnboardingPage() {
     previousStep,
     completeOnboarding,
   } = useOnboarding()
+  
+  const [showAdminTab, setShowAdminTab] = useState(false)
 
   // Check for reset parameter in URL
   useEffect(() => {
@@ -153,7 +156,20 @@ export default function OnboardingPage() {
     nextStep()
   }
 
+  const handleAdminTabClick = () => {
+    setShowAdminTab(true)
+  }
+
+  const handleBackFromAdmin = () => {
+    setShowAdminTab(false)
+  }
+
   const renderStep = () => {
+    // Show admin tab if toggled
+    if (showAdminTab) {
+      return <AdminTab />
+    }
+
     switch (state.step) {
       case 1:
         return (
@@ -222,10 +238,12 @@ export default function OnboardingPage() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <ProgressHeader
-          currentStep={state.step}
+          currentStep={showAdminTab ? 0 : state.step}
           totalSteps={6}
           xp={state.xp}
-          stepTitle={STEP_TITLES[state.step - 1]}
+          stepTitle={showAdminTab ? 'Admin Dashboard' : STEP_TITLES[state.step - 1]}
+          onAdminTabClick={handleAdminTabClick}
+          showAdminTab={!showAdminTab}
         />
 
         <AnimatePresence mode="wait">
@@ -240,7 +258,18 @@ export default function OnboardingPage() {
           </motion.div>
         </AnimatePresence>
 
-        {state.step > 1 && (
+        {showAdminTab ? (
+          <div className="mt-10 flex justify-center">
+            <motion.button
+              onClick={handleBackFromAdmin}
+              className="px-6 py-3 rounded-xl border-2 border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/30 font-medium transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              ← Back to Onboarding
+            </motion.button>
+          </div>
+        ) : state.step > 1 && (
           <div className="mt-10 flex justify-center">
             <motion.button
               onClick={previousStep}
