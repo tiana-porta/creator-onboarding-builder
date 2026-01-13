@@ -2,7 +2,7 @@
 
 import { GlassCard } from './GlassCard'
 import { motion } from 'framer-motion'
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 
 interface Step2CommitmentProps {
   onCommit: () => void
@@ -10,14 +10,11 @@ interface Step2CommitmentProps {
 
 export function Step2Commitment({ onCommit }: Step2CommitmentProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    // Force video to load
-    video.load()
+    if (videoRef.current) {
+      videoRef.current.load()
+    }
   }, [])
 
   return (
@@ -35,19 +32,14 @@ export function Step2Commitment({ onCommit }: Step2CommitmentProps) {
           <div className="aspect-video rounded-2xl mb-6 border border-primary/20 overflow-hidden">
             <video
               ref={videoRef}
+              src="/videos/commitment-video.mp4"
               className="w-full h-full object-cover"
               autoPlay
               muted
               playsInline
               controls
               loop
-              preload="auto"
-              onError={() => setHasError(true)}
-              onLoadedData={() => setHasError(false)}
-            >
-              <source src="/videos/commitment-video.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            />
           </div>
         </GlassCard>
 
