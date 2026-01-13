@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { Theme } from 'frosted-ui'
 import { WhopApp } from '@whop/react/components'
 import './globals.css'
 
@@ -123,11 +122,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={acidGrotesk.variable} suppressHydrationWarning>
       <body>
-        <WhopApp>
-          <Theme>
-            {children}
-          </Theme>
-        </WhopApp>
+        <WhopApp>{children}</WhopApp>
       </body>
     </html>
   )

@@ -1,3 +1,5 @@
+@import "@whop/react/styles.css" layer(frosted_ui);
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
