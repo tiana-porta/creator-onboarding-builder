@@ -1,5 +1,8 @@
 'use client'
 
+// Mark as dynamic to avoid static generation issues with WhopApp
+export const dynamic = 'force-dynamic'
+
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOnboarding } from '@/lib/onboarding/hooks'

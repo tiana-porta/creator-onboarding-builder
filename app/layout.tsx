@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Theme } from 'frosted-ui'
+import { WhopApp } from '@whop/react/components'
 import './globals.css'
 
 // FFF-AcidGrotesk font configuration
@@ -112,11 +113,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={acidGrotesk.variable}>
+    <html lang="en" className={acidGrotesk.variable} suppressHydrationWarning>
       <body>
-        <Theme>
-          {children}
-        </Theme>
+        <WhopApp>
+          <Theme>
+            {children}
+          </Theme>
+        </WhopApp>
       </body>
     </html>
   )
