@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { WhopApp } from '@whop/react/components'
+import WhopAppWrapper from './whop-app-wrapper'
 import './globals.css'
 
 // Ensure App ID is available - set as fallback if env var doesn't load
@@ -122,7 +122,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={acidGrotesk.variable} suppressHydrationWarning>
       <body>
-        <WhopApp>{children}</WhopApp>
+        <WhopAppWrapper>{children}</WhopAppWrapper>
       </body>
     </html>
   )
