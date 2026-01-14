@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Main onboarding configuration per creator/whop
+model Onboarding {
+  id        String   @id @default(cuid())
+  whopId    String   @unique // The Whop ID this onboarding belongs to
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  versions  OnboardingVersion[]
+  
+  @@index([whopId])
+}
+
+// Draft and published versions of onboarding configs
+model OnboardingVersion {
+  id           String   @id @default(cuid())
+  onboardingId String
+  version      Int      @default(1) // Version number
+  status       String   // "draft" | "published"
+  publishedAt  DateTime?
+  publishedBy  String?  // User ID who published
+  
+  // Theme/Branding
+  primaryColor      String   @default("#141212")
+  secondaryColor    String   @default("#FA4616")
+  lightColor        String   @default("#FCF6F5")
+  gradientStops     String?  // JSON array of gradient stops
+  buttonRadius      Int      @default(12)
+  buttonStyle       String   @default("solid") // "solid" | "outline" | "ghost"
+  logoUrl           String?
+  coverImageUrl     String?
+  mode              String   @default("dark") // "light" | "dark"
+  
+  // Welcome screen
+  welcomeTitle      String?
+  welcomeSubtitle   String?
+  welcomeCompleted  Boolean  @default(false)
+  
+  // Steps (stored as JSON for flexibility)
+  steps             String   // JSON array of StepConfig
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  onboarding        Onboarding @relation(fields: [onboardingId], references: [id], onDelete: Cascade)
+  progress          OnboardingProgress[]
+  
+  @@index([onboardingId, status])
+  @@index([status])
+}
+
+// User progress tracking
+model OnboardingProgress {
+  id           String   @id @default(cuid())
+  versionId    String
+  userId       String   // Whop user ID
+  email        String?
+  
+  // Progress state
+  currentStep  Int      @default(1)
+  xp           Int      @default(0)
+  completed    Boolean  @default(false)
+  
+  // Step-specific data (stored as JSON)
+  stepData     String?  // JSON object with step-specific progress
+  
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  version      OnboardingVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  stepProgress StepProgress[]
+  
+  @@unique([versionId, userId])
+  @@index([versionId])
+  @@index([userId])
+  @@index([completed])
+}
+
+// Step progress tracking (optional, for detailed analytics)
+model StepProgress {
+  id           String   @id @default(cuid())
+  progressId   String
+  stepIndex    Int      // Which step (0-based)
+  stepType     String   // "choice" | "video" | "tour" | "form" | "checklist" | "finale"
+  completed    Boolean  @default(false)
+  xpEarned     Int      @default(0)
+  completedAt  DateTime?
+  
+  // Relations
+  progress     OnboardingProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  
+  @@unique([progressId, stepIndex])
+  @@index([progressId])
+}

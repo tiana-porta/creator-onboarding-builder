@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useAdminCheck } from '@/lib/hooks/useAdminCheck'
+import { useTheme } from '@/lib/theme/ThemeProvider'
 
 interface ProgressHeaderProps {
   currentStep: number
@@ -23,6 +24,7 @@ export function ProgressHeader({
   const progress = (currentStep / totalSteps) * 100
   const { isAdmin, loading } = useAdminCheck()
   const shouldShowAdminTab = showAdminTab && !loading && isAdmin === true
+  const { theme } = useTheme()
 
   return (
     <div className="w-full mb-10">
@@ -37,22 +39,41 @@ export function ProgressHeader({
           {shouldShowAdminTab && onAdminTabClick && (
             <motion.button
               onClick={onAdminTabClick}
-              className="px-4 py-2 rounded-lg border-2 border-accent/30 text-accent hover:bg-accent/10 font-medium text-sm transition-all"
+              className="px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all"
+              style={{
+                borderColor: `${theme.secondaryColor}4D`,
+                color: theme.secondaryColor,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${theme.secondaryColor}1A`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               🔧 Admin
             </motion.button>
           )}
-          <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent/10 border-2 border-accent/20 shadow-sm">
-            <span className="text-accent font-bold text-lg">{xp}</span>
+          <div 
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full shadow-sm"
+            style={{
+              backgroundColor: `${theme.secondaryColor}1A`,
+              border: `2px solid ${theme.secondaryColor}33`,
+            }}
+          >
+            <span className="font-bold text-lg" style={{ color: theme.secondaryColor }}>{xp}</span>
             <span className="text-primary/70 text-sm font-semibold">XP</span>
           </div>
         </div>
       </div>
       <div className="relative h-3 bg-primary/20 rounded-full overflow-hidden shadow-inner">
         <motion.div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-accent to-accent/90 rounded-full shadow-sm"
+          className="absolute inset-y-0 left-0 rounded-full shadow-sm"
+          style={{
+            background: `linear-gradient(to right, ${theme.secondaryColor}, ${theme.secondaryColor}E6)`,
+          }}
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
