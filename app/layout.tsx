@@ -1,12 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import WhopAppWrapper from './whop-app-wrapper'
+import { WhopApp } from '@whop/react/components'
 import './globals.css'
-
-// Ensure App ID is available - set as fallback if env var doesn't load
-if (typeof process !== 'undefined' && !process.env.NEXT_PUBLIC_WHOP_APP_ID) {
-  process.env.NEXT_PUBLIC_WHOP_APP_ID = 'app_AVNFP7BwO95Bf8'
-}
 
 // FFF-AcidGrotesk font configuration
 const acidGrotesk = localFont({
@@ -122,7 +117,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={acidGrotesk.variable} suppressHydrationWarning>
       <body>
-        <WhopAppWrapper>{children}</WhopAppWrapper>
+        <WhopApp>{children}</WhopApp>
       </body>
     </html>
   )

@@ -1,81 +1,69 @@
 /**
  * Ownership verification for multi-tenancy
- * 
- * This ensures creators can only access and modify their own onboarding configs.
- * 
- * Integration with Whop SDK:
- * - Use Whop's authentication to get the current user's whopId
- * - Pass whopId in API requests or get it from session
+ *
+ * Ensures creators can only access and modify their own onboarding configs.
  */
 
+import { verifyUser, getDevUser } from './whop'
+
 export interface AuthContext {
-  whopId: string
-  userId?: string
+  userId: string
+  companyId?: string
   email?: string
 }
 
 /**
- * Verify that a creator owns the whopId they're trying to access
- * 
- * In production, this should:
- * 1. Get the authenticated user's whopId from session/auth
- * 2. Compare it with the requested whopId
- * 3. Return true only if they match
- * 
- * For now, this is a placeholder that you should replace with your actual auth logic
+ * Get authenticated user from request context
+ *
+ * Returns the authenticated user or null if not authenticated.
+ * In development mode, returns a mock user if no real auth is available.
+ */
+export async function getAuthenticatedUser(): Promise<AuthContext | null> {
+  // Try to get real user from Whop SDK
+  const user = await verifyUser()
+
+  if (user) {
+    return {
+      userId: user.userId,
+      companyId: user.companyId,
+    }
+  }
+
+  // Fall back to dev user in development mode only
+  if (process.env.NODE_ENV === 'development') {
+    const devUser = getDevUser()
+    if (devUser) {
+      return {
+        userId: devUser.userId,
+        companyId: devUser.companyId,
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Verify that a user owns the whopId they're trying to access
+ *
+ * For multi-tenancy, the user's companyId must match the requested whopId
  */
 export async function verifyOwnership(
   requestedWhopId: string,
   authContext?: AuthContext
 ): Promise<boolean> {
-  // TODO: Replace with actual authentication check
-  // Example with Whop SDK:
-  // const user = await whop.getUser()
-  // return user.whopId === requestedWhopId
-  
   if (!authContext) {
-    // In development, allow if no auth context (for testing)
-    if (process.env.NODE_ENV === 'development') {
-      return true
-    }
     return false
   }
-  
-  return authContext.whopId === requestedWhopId
+
+  // The companyId from Whop represents the whopId for this context
+  return authContext.companyId === requestedWhopId
 }
 
 /**
- * Get the authenticated user's whopId
- * 
- * This should be replaced with your actual auth implementation
+ * Get the authenticated user's whopId (companyId in Whop terms)
  */
 export async function getAuthenticatedWhopId(): Promise<string | null> {
-  // TODO: Replace with actual auth
-  // Example:
-  // const session = await getSession()
-  // return session?.user?.whopId || null
-  
-  // For development/testing, you can return a default
-  if (process.env.NODE_ENV === 'development') {
-    return process.env.DEFAULT_WHOP_ID || null
-  }
-  
-  return null
+  const user = await getAuthenticatedUser()
+  return user?.companyId || null
 }
-
-/**
- * Get auth context from request
- * 
- * This extracts auth info from headers, cookies, or request body
- */
-export async function getAuthFromRequest(request: Request): Promise<AuthContext | null> {
-  // TODO: Implement based on your auth system
-  // Examples:
-  // 1. From headers (API key, JWT token)
-  // 2. From cookies (session cookie)
-  // 3. From Whop SDK context
-  
-  // For now, return null (will use development mode fallback)
-  return null
-}
-

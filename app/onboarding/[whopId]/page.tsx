@@ -1,111 +1,56 @@
-'use client'
+import { getPublishedVersion, versionToConfig } from '@/lib/onboarding/service'
+import { getAuthFromRequest } from '@/lib/auth/ownership'
+import { prisma } from '@/lib/db/client'
+import OnboardingClient from './OnboardingClient'
+import { headers } from 'next/headers'
 
-import { useEffect, useState } from 'react'
-import { ThemeProvider } from '@/lib/theme/ThemeProvider'
-import { OnboardingRenderer } from '@/components/onboarding/OnboardingRenderer'
-import type { OnboardingConfig } from '@/lib/onboarding/config-types'
+export default async function OnboardingPage({ params }: { params: { whopId: string } }) {
+  const { whopId } = params
 
-export default function OnboardingPage({ params }: { params: { whopId: string } }) {
-  const [config, setConfig] = useState<OnboardingConfig | null>(null)
-  const [progress, setProgress] = useState({
-    currentStep: 1,
-    xp: 0,
-    stepData: {} as Record<string, any>,
-    completed: false,
-  })
-  const [loading, setLoading] = useState(true)
-  const [userId] = useState('demo-user-1') // TODO: Get from auth
-
-  useEffect(() => {
-    loadOnboarding()
-  }, [params.whopId])
-
-  const loadOnboarding = async () => {
-    try {
-      setLoading(true)
-      
-      // Load published config
-      const configRes = await fetch(`/api/onboarding?whop_id=${params.whopId}&type=published`)
-      if (!configRes.ok) {
-        throw new Error('Onboarding not found')
-      }
-      const configData = await configRes.json()
-      setConfig(configData)
-
-      // Load user progress
-      const progressRes = await fetch(`/api/onboarding/progress?whop_id=${params.whopId}&user_id=${userId}`)
-      if (progressRes.ok) {
-        const progressData = await progressRes.json()
-        setProgress(progressData)
-      }
-    } catch (error) {
-      console.error('Error loading onboarding:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleStepComplete = async (stepIndex: number, data: any) => {
-    const newProgress = {
-      ...progress,
-      currentStep: stepIndex + 2,
-      stepData: { ...progress.stepData, ...data },
-      xp: progress.xp + (config?.steps[stepIndex]?.xpReward || 0),
-    }
-    setProgress(newProgress)
-
-    // Save to DB
-    await fetch('/api/onboarding/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        whop_id: params.whopId,
-        user_id: userId,
-        currentStep: newProgress.currentStep,
-        xp: newProgress.xp,
-        stepData: newProgress.stepData,
-      }),
-    })
-  }
-
-  const handleComplete = async () => {
-    const newProgress = { ...progress, completed: true }
-    setProgress(newProgress)
-
-    // Save completion
-    await fetch('/api/onboarding/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        whop_id: params.whopId,
-        user_id: userId,
-        completed: true,
-      }),
-    })
-  }
-
-  const handleXPChange = async (xp: number) => {
-    setProgress(prev => ({ ...prev, xp }))
-  }
-
-  if (loading || !config) {
+  // Fetch onboarding config
+  const published = await getPublishedVersion(whopId)
+  if (!published) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark">
-        <div className="text-primary">Loading...</div>
+        <div className="text-primary">Onboarding not found</div>
       </div>
     )
   }
 
+  const fullVersion = await prisma.onboardingVersion.findUnique({
+    where: { id: published.id },
+    include: { onboarding: true },
+  })
+
+  const config = versionToConfig(fullVersion)
+
+  // Get user and their progress
+  const authContext = await getAuthFromRequest(new Request(process.env.NEXT_PUBLIC_URL!, { headers: headers() }))
+  const userId = authContext?.userId || 'demo-user-1' // Replace with real user ID
+
+  const progress = await prisma.onboardingProgress.findUnique({
+    where: {
+      versionId_userId: {
+        versionId: published.id,
+        userId,
+      },
+    },
+  })
+
+  const initialProgress = progress || {
+    currentStep: 1,
+    xp: 0,
+    stepData: {},
+    completed: false,
+  }
+
   return (
-    <ThemeProvider theme={config.theme}>
-      <OnboardingRenderer
-        config={config}
-        userProgress={progress}
-        onStepComplete={handleStepComplete}
-        onComplete={handleComplete}
-        onXPChange={handleXPChange}
-      />
-    </ThemeProvider>
+    <OnboardingClient
+      config={config}
+      initialProgress={initialProgress}
+      whopId={whopId}
+      userId={userId}
+    />
   )
 }
 

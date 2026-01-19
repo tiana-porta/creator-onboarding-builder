@@ -1,37 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDraftVersion, updateDraftTheme, versionToConfig } from '@/lib/onboarding/service'
 import { prisma } from '@/lib/db/client'
-// import { extractAndVerifyWhopId } from '@/lib/auth/middleware' // TODO: Re-enable when ready for multi-tenancy
-
-// Ensure we always return JSON, even on errors
-function jsonResponse(data: any, status: number = 200) {
-  return NextResponse.json(data, { 
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
+import {
+  withAuth,
+  badRequest,
+  notFound,
+  serverError,
+  type AuthenticatedContext,
+} from '@/lib/auth/middleware'
 
 // GET /api/onboarding/draft?whop_id=...
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (_request: NextRequest, { whopId }: AuthenticatedContext) => {
   try {
     if (!prisma) {
-      return jsonResponse({ error: 'Database client not initialized' }, 500)
-    }
-
-    // TODO: Re-enable ownership verification when ready for multi-tenancy
-    // const whopIdResult = await extractAndVerifyWhopId(request)
-    // if (whopIdResult.response) {
-    //   return whopIdResult.response
-    // }
-    // const whopId = whopIdResult.whopId!
-    
-    const searchParams = request.nextUrl.searchParams
-    const whopId = searchParams.get('whop_id')
-    
-    if (!whopId) {
-      return jsonResponse({ error: 'whop_id is required' }, 400)
+      return serverError('Database client not initialized')
     }
 
     const draft = await getDraftVersion(whopId)
@@ -41,72 +23,55 @@ export async function GET(request: NextRequest) {
     })
 
     if (!fullVersion) {
-      return jsonResponse({ error: 'Draft not found' }, 404)
+      return notFound('Draft not found')
     }
 
     const config = versionToConfig(fullVersion)
-    return jsonResponse(config)
-  } catch (error: any) {
+    return NextResponse.json(config)
+  } catch (error: unknown) {
     console.error('Error fetching draft:', error)
-    return jsonResponse({ 
-      error: error.message || 'Failed to fetch draft',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, 500)
+    const message = error instanceof Error ? error.message : 'Failed to fetch draft'
+    const stack = error instanceof Error ? error.stack : undefined
+    return serverError(message, stack)
   }
-}
+})
 
 // PUT /api/onboarding/draft - Update draft theme
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { whopId }: AuthenticatedContext) => {
   try {
     if (!prisma) {
-      return jsonResponse({ error: 'Database client not initialized' }, 500)
+      return serverError('Database client not initialized')
     }
 
     let body
     try {
       body = await request.json()
-    } catch (e) {
-      return jsonResponse({ error: 'Invalid JSON in request body' }, 400)
+    } catch {
+      return badRequest('Invalid JSON in request body')
     }
 
-    const { whop_id, theme, welcomeTitle, welcomeSubtitle, welcomeCompleted } = body
-
-    // TODO: Re-enable ownership verification when ready for multi-tenancy
-    // const whopIdResult = await extractAndVerifyWhopId(request)
-    // if (whopIdResult.response) {
-    //   return whopIdResult.response
-    // }
-    // const whop_id_verified = whopIdResult.whopId!
-    // if (whop_id && whop_id !== whop_id_verified) {
-    //   return jsonResponse({ error: 'whop_id mismatch: You can only modify your own onboarding' }, 403)
-    // }
-
-    if (!whop_id) {
-      return jsonResponse({ error: 'whop_id is required' }, 400)
-    }
+    const { theme, welcomeTitle, welcomeSubtitle, welcomeCompleted } = body
 
     let draft
     try {
-      draft = await getDraftVersion(whop_id) // Using whop_id from body (no verification)
-    } catch (e: any) {
+      draft = await getDraftVersion(whopId)
+    } catch (e: unknown) {
       console.error('Error getting draft version:', e)
-      return jsonResponse({ 
-        error: `Failed to get draft: ${e.message || 'Unknown error'}` 
-      }, 500)
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      return serverError(`Failed to get draft: ${message}`)
     }
 
     if (!draft || !draft.id) {
-      return jsonResponse({ error: 'Draft not found or invalid' }, 404)
+      return notFound('Draft not found or invalid')
     }
 
     if (theme) {
       try {
-        await updateDraftTheme(whop_id, theme)
-      } catch (e: any) {
+        await updateDraftTheme(whopId, theme)
+      } catch (e: unknown) {
         console.error('Error updating theme:', e)
-        return jsonResponse({ 
-          error: `Failed to update theme: ${e.message || 'Unknown error'}` 
-        }, 500)
+        const message = e instanceof Error ? e.message : 'Unknown error'
+        return serverError(`Failed to update theme: ${message}`)
       }
     }
 
@@ -120,11 +85,10 @@ export async function PUT(request: NextRequest) {
             welcomeCompleted: welcomeCompleted !== undefined ? welcomeCompleted : draft.welcomeCompleted,
           },
         })
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('Error updating welcome fields:', e)
-        return jsonResponse({ 
-          error: `Failed to update welcome fields: ${e.message || 'Unknown error'}` 
-        }, 500)
+        const message = e instanceof Error ? e.message : 'Unknown error'
+        return serverError(`Failed to update welcome fields: ${message}`)
       }
     }
 
@@ -134,33 +98,30 @@ export async function PUT(request: NextRequest) {
         where: { id: draft.id },
         include: { onboarding: true },
       })
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Error fetching updated version:', e)
-      return jsonResponse({ 
-        error: `Failed to fetch updated version: ${e.message || 'Unknown error'}` 
-      }, 500)
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      return serverError(`Failed to fetch updated version: ${message}`)
     }
 
     if (!updated) {
-      return jsonResponse({ error: 'Failed to update draft' }, 500)
+      return serverError('Failed to update draft')
     }
 
     let config
     try {
       config = versionToConfig(updated)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Error converting to config:', e)
-      return jsonResponse({ 
-        error: `Failed to convert version: ${e.message || 'Unknown error'}` 
-      }, 500)
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      return serverError(`Failed to convert version: ${message}`)
     }
 
-    return jsonResponse(config)
-  } catch (error: any) {
+    return NextResponse.json(config)
+  } catch (error: unknown) {
     console.error('Unexpected error updating draft:', error)
-    return jsonResponse({ 
-      error: error.message || 'Failed to update draft',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, 500)
+    const message = error instanceof Error ? error.message : 'Failed to update draft'
+    const stack = error instanceof Error ? error.stack : undefined
+    return serverError(message, stack)
   }
-}
+})
