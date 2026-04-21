@@ -1,35 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { getAuthenticatedUser } from '@/lib/auth/ownership'
+import { whopsdk } from '@/lib/whop-sdk'
 
-// Mark route as dynamic
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const resourceId = searchParams.get('resource_id')
+
+  if (!resourceId) {
+    return NextResponse.json({ error: 'resource_id is required' }, { status: 400 })
+  }
+
   try {
     const headersList = await headers()
+    const { userId } = await whopsdk.verifyUserToken(headersList)
+    const access = await whopsdk.users.checkAccess(resourceId, { id: userId })
 
-    // Try to get authenticated user
-    const user = await getAuthenticatedUser()
-
-    if (user) {
-      // User is authenticated - for now, assume they're admin if they have a company
-      return NextResponse.json({
-        success: true,
-        isAdmin: !!user.companyId,
-        userId: user.userId,
-      })
-    }
-
-    // Fallback: check referer to see if request is from Whop
-    const referer = headersList.get('referer') || request.headers.get('referer') || ''
-    const isFromWhop = referer.includes('whop.com') || referer.includes('whop.io')
-
-    // For development: if request is from Whop, assume admin (can be refined later)
     return NextResponse.json({
       success: true,
-      isAdmin: isFromWhop && process.env.NODE_ENV === 'development',
-      message: isFromWhop ? 'Development mode: assuming admin' : 'Could not verify admin status',
+      isAdmin: access.has_access,
+      userId,
     })
   } catch (error: any) {
     console.error('Admin check API error:', error)

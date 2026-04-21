@@ -62,8 +62,7 @@ export function ThemeProvider({ theme = {}, children }: ThemeProviderProps) {
     <ThemeContext.Provider value={value}>
       <div
         style={cssVariables as React.CSSProperties}
-        className={mergedTheme.mode === 'dark' ? 'dark' : 'light'}
-        data-theme-mode={mergedTheme.mode}
+        className="min-h-screen"
       >
         {children}
       </div>

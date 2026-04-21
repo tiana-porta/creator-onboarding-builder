@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDraftVersion, updateDraftTheme, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
 import { supabaseAdmin } from '@/lib/db/supabase'
-import {
-  withAuth,
-  badRequest,
-  notFound,
-  serverError,
-  type AuthenticatedContext,
-} from '@/lib/auth/middleware'
 
 // GET /api/onboarding/draft?whop_id=...
-export const GET = withAuth(async (_request: NextRequest, { whopId }: AuthenticatedContext) => {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const whopId = searchParams.get('whop_id')
+
+  if (!whopId) {
+    return NextResponse.json({ error: 'whop_id is required' }, { status: 400 })
+  }
+
   try {
     const draft = await getDraftVersion(whopId)
     const fullVersion = await getVersionWithOnboarding(draft.id)
 
     if (!fullVersion) {
-      return notFound('Draft not found')
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     const config = versionToConfig(fullVersion)
@@ -24,92 +24,66 @@ export const GET = withAuth(async (_request: NextRequest, { whopId }: Authentica
   } catch (error: unknown) {
     console.error('Error fetching draft:', error)
     const message = error instanceof Error ? error.message : 'Failed to fetch draft'
-    const stack = error instanceof Error ? error.stack : undefined
-    return serverError(message, stack)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-})
+}
 
 // PUT /api/onboarding/draft - Update draft theme
-export const PUT = withAuth(async (request: NextRequest, { whopId }: AuthenticatedContext) => {
-  try {
-    let body
-    try {
-      body = await request.json()
-    } catch {
-      return badRequest('Invalid JSON in request body')
-    }
+export async function PUT(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  let whopId = searchParams.get('whop_id')
 
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
+  }
+
+  // Allow whop_id in body as fallback
+  if (!whopId && body.whop_id) {
+    whopId = body.whop_id
+  }
+
+  if (!whopId) {
+    return NextResponse.json({ error: 'whop_id is required' }, { status: 400 })
+  }
+
+  try {
     const { theme, welcomeTitle, welcomeSubtitle, welcomeCompleted } = body
 
-    let draft
-    try {
-      draft = await getDraftVersion(whopId)
-    } catch (e: unknown) {
-      console.error('Error getting draft version:', e)
-      const message = e instanceof Error ? e.message : 'Unknown error'
-      return serverError(`Failed to get draft: ${message}`)
-    }
-
+    const draft = await getDraftVersion(whopId)
     if (!draft || !draft.id) {
-      return notFound('Draft not found or invalid')
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     if (theme) {
-      try {
-        await updateDraftTheme(whopId, theme)
-      } catch (e: unknown) {
-        console.error('Error updating theme:', e)
-        const message = e instanceof Error ? e.message : 'Unknown error'
-        return serverError(`Failed to update theme: ${message}`)
-      }
+      await updateDraftTheme(whopId, theme)
     }
 
     if (welcomeTitle !== undefined || welcomeSubtitle !== undefined || welcomeCompleted !== undefined) {
-      try {
-        const { error } = await supabaseAdmin
-          .from('onboarding_version')
-          .update({
-            welcome_title: welcomeTitle !== undefined ? welcomeTitle : draft.welcome_title,
-            welcome_subtitle: welcomeSubtitle !== undefined ? welcomeSubtitle : draft.welcome_subtitle,
-            welcome_completed: welcomeCompleted !== undefined ? welcomeCompleted : draft.welcome_completed,
-          })
-          .eq('id', draft.id)
+      const { error } = await supabaseAdmin
+        .from('onboarding_version')
+        .update({
+          welcome_title: welcomeTitle !== undefined ? welcomeTitle : draft.welcome_title,
+          welcome_subtitle: welcomeSubtitle !== undefined ? welcomeSubtitle : draft.welcome_subtitle,
+          welcome_completed: welcomeCompleted !== undefined ? welcomeCompleted : draft.welcome_completed,
+        })
+        .eq('id', draft.id)
 
-        if (error) throw error
-      } catch (e: unknown) {
-        console.error('Error updating welcome fields:', e)
-        const message = e instanceof Error ? e.message : 'Unknown error'
-        return serverError(`Failed to update welcome fields: ${message}`)
-      }
+      if (error) throw error
     }
 
-    let updated
-    try {
-      updated = await getVersionWithOnboarding(draft.id)
-    } catch (e: unknown) {
-      console.error('Error fetching updated version:', e)
-      const message = e instanceof Error ? e.message : 'Unknown error'
-      return serverError(`Failed to fetch updated version: ${message}`)
-    }
-
+    const updated = await getVersionWithOnboarding(draft.id)
     if (!updated) {
-      return serverError('Failed to update draft')
+      return NextResponse.json({ error: 'Failed to update draft' }, { status: 500 })
     }
 
-    let config
-    try {
-      config = versionToConfig(updated)
-    } catch (e: unknown) {
-      console.error('Error converting to config:', e)
-      const message = e instanceof Error ? e.message : 'Unknown error'
-      return serverError(`Failed to convert version: ${message}`)
-    }
-
+    const config = versionToConfig(updated)
     return NextResponse.json(config)
   } catch (error: unknown) {
-    console.error('Unexpected error updating draft:', error)
+    console.error('Error updating draft:', error)
     const message = error instanceof Error ? error.message : 'Failed to update draft'
-    const stack = error instanceof Error ? error.stack : undefined
-    return serverError(message, stack)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-})
+}

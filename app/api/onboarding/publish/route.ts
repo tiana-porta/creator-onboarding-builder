@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { publishDraft, getPublishedVersion, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
-import { extractAndVerifyWhopId } from '@/lib/auth/middleware'
 
 // POST /api/onboarding/publish
 export async function POST(request: NextRequest) {
   try {
-    const whopIdResult = await extractAndVerifyWhopId(request)
-    if (whopIdResult.response) {
-      return whopIdResult.response
-    }
-    const whop_id_verified = whopIdResult.whopId!
-
     const body = await request.json()
-    const { published_by } = body
+    const { whop_id, published_by } = body
 
-    await publishDraft(whop_id_verified, published_by)
+    if (!whop_id) {
+      return NextResponse.json({ error: 'whop_id is required' }, { status: 400 })
+    }
 
-    const published = await getPublishedVersion(whop_id_verified)
+    await publishDraft(whop_id, published_by)
+
+    const published = await getPublishedVersion(whop_id)
     if (!published) {
       return NextResponse.json({ error: 'Failed to publish' }, { status: 500 })
     }
 
     const fullVersion = await getVersionWithOnboarding(published.id)
-
     const config = versionToConfig(fullVersion)
     return NextResponse.json(config)
   } catch (error: any) {

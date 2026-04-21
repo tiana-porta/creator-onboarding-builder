@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getLeaderboardStats } from '@/lib/admin/storage'
 
-// Mark route as dynamic since it uses request.headers
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  try {
-    // For development: allow access without auth if WHOP_API_KEY is not set
-    // In production, implement proper Whop SDK authentication
-    const apiKey = request.headers.get('x-admin-api-key')
-    const expectedKey = process.env.WHOP_API_KEY
-    
-    // Only enforce auth if API key is configured
-    if (expectedKey) {
-      if (!apiKey || apiKey !== expectedKey) {
-        return NextResponse.json(
-          { error: 'Unauthorized - Admin access required' },
-          { status: 401 }
-        )
-      }
-    }
+  const { searchParams } = new URL(request.url)
+  const whopId = searchParams.get('whop_id')
 
-    // Get leaderboard stats
-    const stats = await getLeaderboardStats()
+  if (!whopId) {
+    return NextResponse.json({ error: 'whop_id is required' }, { status: 400 })
+  }
+
+  try {
+    const stats = await getLeaderboardStats(whopId)
 
     return NextResponse.json({
       success: true,

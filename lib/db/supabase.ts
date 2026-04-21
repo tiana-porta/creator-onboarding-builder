@@ -1,14 +1,32 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
-// Client-side client (uses anon key, respects RLS)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Lazy initialization to prevent build errors
+let _supabase: SupabaseClient | null = null
+let _supabaseAdmin: SupabaseClient | null = null
 
-// Server-side client (uses service role key, bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    if (!_supabase) {
+      if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required')
+      _supabase = createClient(supabaseUrl, supabaseAnonKey)
+    }
+    return (_supabase as any)[prop]
+  },
+})
+
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    if (!_supabaseAdmin) {
+      if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required')
+      _supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    }
+    return (_supabaseAdmin as any)[prop]
+  },
+})
 
 // Database types matching our schema
 export interface DbOnboarding {

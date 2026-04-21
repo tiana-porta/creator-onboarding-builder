@@ -1,5 +1,6 @@
 export interface OnboardingRecord {
   userId: string
+  whopId: string
   email?: string
   step: number
   xp: number

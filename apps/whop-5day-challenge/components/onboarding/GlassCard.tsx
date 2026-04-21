@@ -1,1 +1,0 @@
-../../../../components/onboarding/GlassCard.tsx

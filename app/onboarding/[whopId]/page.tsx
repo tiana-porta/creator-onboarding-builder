@@ -1,5 +1,6 @@
+import { headers } from 'next/headers'
 import { getPublishedVersion, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
-import { getAuthenticatedUser } from '@/lib/auth/ownership'
+import { whopsdk } from '@/lib/whop-sdk'
 import { supabaseAdmin } from '@/lib/db/supabase'
 import OnboardingClient from './OnboardingClient'
 
@@ -19,9 +20,9 @@ export default async function OnboardingPage({ params }: { params: Promise<{ who
   const fullVersion = await getVersionWithOnboarding(published.id)
   const config = versionToConfig(fullVersion)
 
-  // Get user and their progress
-  const authContext = await getAuthenticatedUser()
-  const userId = authContext?.userId || 'demo-user-1' // Replace with real user ID
+  // Get user from Whop SDK
+  const headersList = await headers()
+  const { userId } = await whopsdk.verifyUserToken(headersList)
 
   const { data: progress } = await supabaseAdmin
     .from('onboarding_progress')

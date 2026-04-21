@@ -36,22 +36,23 @@ export async function getAllRecords(): Promise<OnboardingRecord[]> {
   }
 }
 
-// Get record by userId
-export async function getRecordByUserId(userId: string): Promise<OnboardingRecord | null> {
+// Get record by userId and whopId
+export async function getRecordByUserId(userId: string, whopId: string): Promise<OnboardingRecord | null> {
   const records = await getAllRecords()
-  return records.find(r => r.userId === userId) || null
+  return records.find(r => r.userId === userId && r.whopId === whopId) || null
 }
 
 // Create or update record
-export async function upsertRecord(record: Partial<OnboardingRecord> & { userId: string }): Promise<OnboardingRecord> {
+export async function upsertRecord(record: Partial<OnboardingRecord> & { userId: string; whopId: string }): Promise<OnboardingRecord> {
   await initializeDataFile()
   const records = await getAllRecords()
-  const existingIndex = records.findIndex(r => r.userId === record.userId)
-  
+  const existingIndex = records.findIndex(r => r.userId === record.userId && r.whopId === record.whopId)
+
   const now = new Date().toISOString()
   const fullRecord: OnboardingRecord = {
     ...record,
     userId: record.userId,
+    whopId: record.whopId,
     email: record.email ?? '',
     step: record.step ?? 0,
     xp: record.xp ?? 0,
@@ -74,15 +75,16 @@ export async function upsertRecord(record: Partial<OnboardingRecord> & { userId:
   return fullRecord
 }
 
-// Get leaderboard stats
-export async function getLeaderboardStats(): Promise<{
+// Get leaderboard stats for a specific whopId
+export async function getLeaderboardStats(whopId: string): Promise<{
   totalStarted: number
   totalCompleted: number
   completionRate: number
   averageXP: number
   users: OnboardingRecord[]
 }> {
-  const records = await getAllRecords()
+  const allRecords = await getAllRecords()
+  const records = allRecords.filter(r => r.whopId === whopId)
   const totalStarted = records.length
   const totalCompleted = records.filter(r => r.completedAt !== null).length
   const completionRate = totalStarted > 0 ? (totalCompleted / totalStarted) * 100 : 0

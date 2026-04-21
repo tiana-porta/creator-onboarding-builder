@@ -117,7 +117,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={acidGrotesk.variable} suppressHydrationWarning>
       <body>
-        <WhopApp>{children}</WhopApp>
+        <WhopApp hasBackground>{children}</WhopApp>
       </body>
     </html>
   )
