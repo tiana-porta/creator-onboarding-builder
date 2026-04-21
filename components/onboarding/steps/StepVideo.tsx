@@ -8,7 +8,7 @@ import type { StepConfig } from '@/lib/onboarding/config-types'
 
 interface StepVideoProps {
   config: StepConfig
-  onContinue: () => void
+  onContinue: (data?: any) => void
 }
 
 export function StepVideo({ config, onContinue }: StepVideoProps) {

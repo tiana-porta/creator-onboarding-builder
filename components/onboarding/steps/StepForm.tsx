@@ -18,9 +18,9 @@ export function StepForm({ config, initialData = {}, onContinue }: StepFormProps
   const [errors, setErrors] = useState<Record<string, string>>({})
   const formFields = config.formFields || []
 
-  const validateField = (fieldId: string, value: string) => {
+  const validateField = (fieldId: string, value: string): string | null => {
     const field = formFields.find(f => f.id === fieldId)
-    if (!field) return true
+    if (!field) return null
 
     if (field.required && !value.trim()) {
       return `${field.label} is required`

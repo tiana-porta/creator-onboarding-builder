@@ -10,9 +10,10 @@ interface GlassCardProps {
   onClick?: () => void
   selected?: boolean
   hover?: boolean
+  style?: React.CSSProperties
 }
 
-export function GlassCard({ children, className = '', onClick, selected, hover = true }: GlassCardProps) {
+export function GlassCard({ children, className = '', onClick, selected, hover = true, style }: GlassCardProps) {
   const { theme } = useTheme()
   
   return (
@@ -28,10 +29,13 @@ export function GlassCard({ children, className = '', onClick, selected, hover =
         ${onClick ? 'cursor-pointer' : ''}
         ${className}
       `}
-      style={selected ? {
-        borderColor: theme.secondaryColor,
-        boxShadow: `0 25px 50px -12px ${theme.secondaryColor}4D`,
-      } : {}}
+      style={{
+        ...(selected ? {
+          borderColor: theme.secondaryColor,
+          boxShadow: `0 25px 50px -12px ${theme.secondaryColor}4D`,
+        } : {}),
+        ...style,
+      }}
       onClick={onClick}
       whileHover={hover && !selected ? { scale: 1.02, y: -2 } : {}}
       whileTap={onClick ? { scale: 0.98 } : {}}

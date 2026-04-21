@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "@supabase/supabase-js": "^2.104.0",
     "@whop/react": "0.3.1",
     "@whop/sdk": "^0.0.23",
     "canvas-confetti": "^1.9.2",

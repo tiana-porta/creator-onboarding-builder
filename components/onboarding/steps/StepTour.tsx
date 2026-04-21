@@ -9,7 +9,7 @@ import type { StepConfig } from '@/lib/onboarding/config-types'
 
 interface StepTourProps {
   config: StepConfig
-  onContinue: () => void
+  onContinue: (data?: any) => void
 }
 
 export function StepTour({ config, onContinue }: StepTourProps) {

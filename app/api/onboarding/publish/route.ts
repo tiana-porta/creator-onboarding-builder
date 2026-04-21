@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { publishDraft, getPublishedVersion, versionToConfig } from '@/lib/onboarding/service'
-import { prisma } from '@/lib/db/client'
+import { publishDraft, getPublishedVersion, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
 import { extractAndVerifyWhopId } from '@/lib/auth/middleware'
 
 // POST /api/onboarding/publish
@@ -22,10 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to publish' }, { status: 500 })
     }
 
-    const fullVersion = await prisma.onboardingVersion.findUnique({
-      where: { id: published.id },
-      include: { onboarding: true },
-    })
+    const fullVersion = await getVersionWithOnboarding(published.id)
 
     const config = versionToConfig(fullVersion)
     return NextResponse.json(config)
@@ -34,4 +30,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

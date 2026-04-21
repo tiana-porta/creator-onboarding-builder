@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDraftVersion, updateDraftSteps, versionToConfig } from '@/lib/onboarding/service'
-import { prisma } from '@/lib/db/client'
+import { getDraftVersion, updateDraftSteps } from '@/lib/onboarding/service'
 import { extractAndVerifyWhopId } from '@/lib/auth/middleware'
 import type { StepConfig } from '@/lib/onboarding/config-types'
 
@@ -14,7 +13,8 @@ export async function GET(request: NextRequest) {
     const whopId = whopIdResult.whopId!
 
     const draft = await getDraftVersion(whopId)
-    const steps = JSON.parse(draft.steps || '[]') as StepConfig[]
+    // Supabase returns JSONB as objects, handle both string and object
+    const steps = typeof draft.steps === 'string' ? JSON.parse(draft.steps || '[]') : (draft.steps || [])
     return NextResponse.json(steps)
   } catch (error: any) {
     console.error('Error fetching steps:', error)
@@ -45,20 +45,14 @@ export async function POST(request: NextRequest) {
     await updateDraftSteps(whop_id_verified, steps as StepConfig[])
 
     const draft = await getDraftVersion(whop_id_verified)
-    let updatedSteps: StepConfig[] = []
-    try {
-      updatedSteps = JSON.parse(draft.steps || '[]')
-    } catch (e) {
-      console.error('Error parsing steps:', e)
-      updatedSteps = []
-    }
+    // Supabase returns JSONB as objects
+    const updatedSteps = typeof draft.steps === 'string' ? JSON.parse(draft.steps || '[]') : (draft.steps || [])
     return NextResponse.json(updatedSteps)
   } catch (error: any) {
     console.error('Error updating steps:', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error.message || 'Failed to update steps',
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 })
   }
 }
-

@@ -9,7 +9,7 @@ interface StepChoiceProps {
   config: StepConfig
   selectedValue?: string | string[]
   onSelect: (value: string) => void
-  onContinue: () => void
+  onContinue: (data?: any) => void
 }
 
 export function StepChoice({ config, selectedValue, onSelect, onContinue }: StepChoiceProps) {

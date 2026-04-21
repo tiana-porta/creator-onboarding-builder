@@ -1,11 +1,10 @@
-import { getPublishedVersion, versionToConfig } from '@/lib/onboarding/service'
-import { getAuthFromRequest } from '@/lib/auth/ownership'
-import { prisma } from '@/lib/db/client'
+import { getPublishedVersion, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
+import { getAuthenticatedUser } from '@/lib/auth/ownership'
+import { supabaseAdmin } from '@/lib/db/supabase'
 import OnboardingClient from './OnboardingClient'
-import { headers } from 'next/headers'
 
-export default async function OnboardingPage({ params }: { params: { whopId: string } }) {
-  const { whopId } = params
+export default async function OnboardingPage({ params }: { params: Promise<{ whopId: string }> }) {
+  const { whopId } = await params
 
   // Fetch onboarding config
   const published = await getPublishedVersion(whopId)
@@ -17,27 +16,26 @@ export default async function OnboardingPage({ params }: { params: { whopId: str
     )
   }
 
-  const fullVersion = await prisma.onboardingVersion.findUnique({
-    where: { id: published.id },
-    include: { onboarding: true },
-  })
-
+  const fullVersion = await getVersionWithOnboarding(published.id)
   const config = versionToConfig(fullVersion)
 
   // Get user and their progress
-  const authContext = await getAuthFromRequest(new Request(process.env.NEXT_PUBLIC_URL!, { headers: headers() }))
+  const authContext = await getAuthenticatedUser()
   const userId = authContext?.userId || 'demo-user-1' // Replace with real user ID
 
-  const progress = await prisma.onboardingProgress.findUnique({
-    where: {
-      versionId_userId: {
-        versionId: published.id,
-        userId,
-      },
-    },
-  })
+  const { data: progress } = await supabaseAdmin
+    .from('onboarding_progress')
+    .select('*')
+    .eq('version_id', published.id)
+    .eq('user_id', userId)
+    .single()
 
-  const initialProgress = progress || {
+  const initialProgress = progress ? {
+    currentStep: progress.current_step,
+    xp: progress.xp,
+    stepData: progress.step_data || {},
+    completed: progress.completed,
+  } : {
     currentStep: 1,
     xp: 0,
     stepData: {},
@@ -53,4 +51,3 @@ export default async function OnboardingPage({ params }: { params: { whopId: str
     />
   )
 }
-

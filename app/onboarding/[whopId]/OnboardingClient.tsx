@@ -5,8 +5,15 @@ import { ThemeProvider } from '@/lib/theme/ThemeProvider'
 import { OnboardingRenderer } from '@/components/onboarding/OnboardingRenderer'
 import type { OnboardingConfig } from '@/lib/onboarding/config-types'
 
-export default function OnboardingClient({ config, initialProgress, whopId, userId }: { config: OnboardingConfig, initialProgress: any, whopId: string, userId: string }) {
-  const [progress, setProgress] = useState(initialProgress)
+interface ProgressState {
+  currentStep: number
+  xp: number
+  stepData: Record<string, any>
+  completed: boolean
+}
+
+export default function OnboardingClient({ config, initialProgress, whopId, userId }: { config: OnboardingConfig, initialProgress: ProgressState, whopId: string, userId: string }) {
+  const [progress, setProgress] = useState<ProgressState>(initialProgress)
 
   const handleStepComplete = async (stepIndex: number, data: any) => {
     const newProgress = {

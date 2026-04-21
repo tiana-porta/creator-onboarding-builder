@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDraftVersion, getPublishedVersion, versionToConfig } from '@/lib/onboarding/service'
-import { prisma } from '@/lib/db/client'
+import { getDraftVersion, getPublishedVersion, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
 
 // GET /api/onboarding?whop_id=...&type=draft|published
 export async function GET(request: NextRequest) {
@@ -25,10 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Include onboarding relation for whopId
-    const fullVersion = await prisma.onboardingVersion.findUnique({
-      where: { id: version.id },
-      include: { onboarding: true },
-    })
+    const fullVersion = await getVersionWithOnboarding(version.id)
 
     const config = versionToConfig(fullVersion)
     return NextResponse.json(config)
@@ -37,4 +33,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
-

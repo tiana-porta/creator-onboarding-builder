@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDraftVersion, updateDraftTheme, versionToConfig } from '@/lib/onboarding/service'
-import { prisma } from '@/lib/db/client'
+import { getDraftVersion, updateDraftTheme, getVersionWithOnboarding, versionToConfig } from '@/lib/onboarding/service'
+import { supabaseAdmin } from '@/lib/db/supabase'
 import {
   withAuth,
   badRequest,
@@ -12,15 +12,8 @@ import {
 // GET /api/onboarding/draft?whop_id=...
 export const GET = withAuth(async (_request: NextRequest, { whopId }: AuthenticatedContext) => {
   try {
-    if (!prisma) {
-      return serverError('Database client not initialized')
-    }
-
     const draft = await getDraftVersion(whopId)
-    const fullVersion = await prisma.onboardingVersion.findUnique({
-      where: { id: draft.id },
-      include: { onboarding: true },
-    })
+    const fullVersion = await getVersionWithOnboarding(draft.id)
 
     if (!fullVersion) {
       return notFound('Draft not found')
@@ -39,10 +32,6 @@ export const GET = withAuth(async (_request: NextRequest, { whopId }: Authentica
 // PUT /api/onboarding/draft - Update draft theme
 export const PUT = withAuth(async (request: NextRequest, { whopId }: AuthenticatedContext) => {
   try {
-    if (!prisma) {
-      return serverError('Database client not initialized')
-    }
-
     let body
     try {
       body = await request.json()
@@ -77,14 +66,16 @@ export const PUT = withAuth(async (request: NextRequest, { whopId }: Authenticat
 
     if (welcomeTitle !== undefined || welcomeSubtitle !== undefined || welcomeCompleted !== undefined) {
       try {
-        await prisma.onboardingVersion.update({
-          where: { id: draft.id },
-          data: {
-            welcomeTitle: welcomeTitle !== undefined ? welcomeTitle : draft.welcomeTitle,
-            welcomeSubtitle: welcomeSubtitle !== undefined ? welcomeSubtitle : draft.welcomeSubtitle,
-            welcomeCompleted: welcomeCompleted !== undefined ? welcomeCompleted : draft.welcomeCompleted,
-          },
-        })
+        const { error } = await supabaseAdmin
+          .from('onboarding_version')
+          .update({
+            welcome_title: welcomeTitle !== undefined ? welcomeTitle : draft.welcome_title,
+            welcome_subtitle: welcomeSubtitle !== undefined ? welcomeSubtitle : draft.welcome_subtitle,
+            welcome_completed: welcomeCompleted !== undefined ? welcomeCompleted : draft.welcome_completed,
+          })
+          .eq('id', draft.id)
+
+        if (error) throw error
       } catch (e: unknown) {
         console.error('Error updating welcome fields:', e)
         const message = e instanceof Error ? e.message : 'Unknown error'
@@ -94,10 +85,7 @@ export const PUT = withAuth(async (request: NextRequest, { whopId }: Authenticat
 
     let updated
     try {
-      updated = await prisma.onboardingVersion.findUnique({
-        where: { id: draft.id },
-        include: { onboarding: true },
-      })
+      updated = await getVersionWithOnboarding(draft.id)
     } catch (e: unknown) {
       console.error('Error fetching updated version:', e)
       const message = e instanceof Error ? e.message : 'Unknown error'
