@@ -1,8 +1,14 @@
 import { supabaseAdmin, DbOnboardingVersion } from '../db/supabase'
+import { getCompanyIdFromExperience } from '../whop-sdk'
 import type { OnboardingConfig, ThemeConfig, StepConfig } from './config-types'
 
 // Get or create onboarding for a whop
-export async function getOrCreateOnboarding(whopId: string) {
+export async function getOrCreateOnboarding(whopId: string, companyId?: string) {
+  // Fetch company_id from Whop API if not provided
+  if (!companyId) {
+    companyId = await getCompanyIdFromExperience(whopId) || undefined
+  }
+
   // Try to find existing onboarding
   const { data: existing } = await supabaseAdmin
     .from('onboarding')
@@ -11,13 +17,20 @@ export async function getOrCreateOnboarding(whopId: string) {
     .single()
 
   if (existing) {
+    // Update company_id if we have it and it's not set
+    if (companyId && !existing.company_id) {
+      await supabaseAdmin
+        .from('onboarding')
+        .update({ company_id: companyId })
+        .eq('id', existing.id)
+    }
     return existing
   }
 
   // Create new onboarding with initial draft version
   const { data: onboarding, error: onboardingError } = await supabaseAdmin
     .from('onboarding')
-    .insert({ whop_id: whopId })
+    .insert({ whop_id: whopId, company_id: companyId })
     .select()
     .single()
 
@@ -82,7 +95,6 @@ export async function getDraftVersion(whopId: string) {
       light_color: latestVersion?.light_color || '#FCF6F5',
       button_radius: latestVersion?.button_radius || 12,
       button_style: latestVersion?.button_style || 'solid',
-      mode: latestVersion?.mode || 'dark',
       welcome_title: latestVersion?.welcome_title,
       welcome_subtitle: latestVersion?.welcome_subtitle,
       welcome_completed: latestVersion?.welcome_completed || false,
@@ -131,7 +143,6 @@ export async function updateDraftTheme(whopId: string, theme: Partial<ThemeConfi
       button_style: theme.buttonStyle,
       logo_url: theme.logoUrl,
       cover_image_url: theme.coverImageUrl,
-      mode: theme.mode,
     })
     .eq('id', draft.id)
     .select()
@@ -230,7 +241,6 @@ export function versionToConfig(version: any): OnboardingConfig {
       buttonStyle: (version.button_style || 'solid') as 'solid' | 'outline' | 'ghost',
       logoUrl: version.logo_url || undefined,
       coverImageUrl: version.cover_image_url || undefined,
-      mode: (version.mode || 'dark') as 'light' | 'dark',
     },
     welcomeTitle: version.welcome_title || undefined,
     welcomeSubtitle: version.welcome_subtitle || undefined,

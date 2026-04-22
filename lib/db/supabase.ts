@@ -32,6 +32,7 @@ export const supabaseAdmin = new Proxy({} as SupabaseClient, {
 export interface DbOnboarding {
   id: string
   whop_id: string
+  company_id: string
   created_at: string
   updated_at: string
 }
@@ -51,7 +52,6 @@ export interface DbOnboardingVersion {
   button_style: 'solid' | 'outline' | 'ghost'
   logo_url: string | null
   cover_image_url: string | null
-  mode: 'light' | 'dark'
   welcome_title: string | null
   welcome_subtitle: string | null
   welcome_completed: boolean

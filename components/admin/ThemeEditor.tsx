@@ -185,21 +185,6 @@ export function ThemeEditor({ theme, welcomeTitle, welcomeSubtitle, onUpdate, on
       </GlassCard>
 
       <GlassCard>
-        <h2 className="text-2xl font-bold text-primary mb-6">Mode</h2>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-2">Theme Mode</label>
-          <select
-            value={localTheme.mode}
-            onChange={(e) => updateField('mode', e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-primary/5 border border-primary/20 text-primary"
-          >
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </div>
-      </GlassCard>
-
-      <GlassCard>
         <h2 className="text-2xl font-bold text-primary mb-6">Assets</h2>
         <div className="space-y-4">
           <div>

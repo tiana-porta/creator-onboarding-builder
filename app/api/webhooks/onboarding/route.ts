@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { appendToSheet, updateIncompleteUsers, type OnboardingData } from '@/lib/sheets/client'
-import { upsertRecord } from '@/lib/admin/storage'
+import { upsertRecord } from '@/lib/leaderboard'
 
 export async function POST(request: NextRequest) {
   try {

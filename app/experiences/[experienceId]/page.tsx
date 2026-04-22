@@ -39,7 +39,6 @@ export default function ExperienceAdminPage() {
             lightColor: '#FCF6F5',
             buttonRadius: 12,
             buttonStyle: 'solid',
-            mode: 'dark',
           },
           welcomeCompleted: false,
           steps: [],

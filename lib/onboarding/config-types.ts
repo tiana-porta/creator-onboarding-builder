@@ -16,7 +16,6 @@ export interface ThemeConfig {
   buttonStyle: 'solid' | 'outline' | 'ghost'
   logoUrl?: string
   coverImageUrl?: string
-  mode: 'light' | 'dark'
 }
 
 export interface ChoiceOption {

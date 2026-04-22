@@ -16,7 +16,6 @@ const DEFAULT_THEME: ThemeConfig = {
   lightColor: '#FCF6F5',
   buttonRadius: 12,
   buttonStyle: 'solid',
-  mode: 'dark',
 }
 
 interface ThemeProviderProps {

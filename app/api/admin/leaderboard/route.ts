@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getLeaderboardStats } from '@/lib/admin/storage'
+import { getLeaderboardStats } from '@/lib/leaderboard'
 
 export const dynamic = 'force-dynamic'
 
